@@ -12,9 +12,15 @@ export namespace hyber {
         id: string,
 
         // default alpha name
-        alpha?: string
+        alpha?: string,
+
+        // Default ttl
+        ttl?:number,
+
+        ctr?: boolean
     }
-    type channels = "push"|"viber"|"sms"|"whatsapp";
+    export type channels = "push"|"viber"|"sms"|"whatsapp";
+    export type device = "phone"|"all";
     export interface Request {
         phone_number: string,
         extra_id?: string,
@@ -23,21 +29,59 @@ export namespace hyber {
         tag?: string,
         division_code?: string,
         channels: channels[],
+        text?: string,
         channel_options: {
-            push?: {},
-            viber?: {},
-            sms?: {},
-            whatsapp?: {},
+            push?: Push,
+            viber?: Viber,
+            sms?: Sms,
+            whatsapp?: Whatsapp,
         }
     }
     export interface Response {
-        message_id: string
+        message_id: string,
+        phone_number:string,
+        extra_id:string,
+        job_id:string,
+        processed: boolean,
+        accepted: boolean
     }
     export interface HyberError extends Error{
         code?: number;
         constructor(message?:string, code?:number): HyberError;
     }
-
+    export interface Notification {
+        text?: string,
+        ttl?: number,
+        ctr?: boolean
+        [key: string]: any
+    }
+    export interface Push extends Notification {
+        title?:string,
+        device?: device,
+        img?:string,
+        caption?:string,
+        action?: string,
+    }
+    export interface Viber extends Notification  {
+        device?: device,
+        img?:string,
+        caption?:string,
+        action?: string,
+        file_name?:string
+    }
+    export interface Sms extends Notification  {
+        alpha_name?: string
+    }
+    export interface Whatsapp extends Notification  {
+        img_name?:string,
+        doc?:string,
+        doc_name?:string,
+        audio?:string,
+        video?:string,
+        video_name?:string,
+        latitude?:number, // -90 <-> 90
+        longitude?:number // -180 <-> 180
+    }
 }
 class HyberError extends Error {
     public code?: number;
@@ -49,12 +93,14 @@ class HyberError extends Error {
 }
 class Hyber {
     private defaultOpts: Omit<hyber.Options, "login" | "pw" | "id" | "alpha"> = {
-        entry: "https://api-v2.hyber.im"
+        entry: "https://api-v2.hyber.im",
+        ttl: 60,
+        ctr: false
     }
-    private opts: hyber.Options;
+    private opts: Required<hyber.Options>;
 
     constructor(options: hyber.Options) {
-        this.opts = Object.assign({}, this.defaultOpts, options);
+        this.opts = Object.assign({}, this.defaultOpts, options) as Required<hyber.Options>;
     }
 
     /**
@@ -62,7 +108,10 @@ class Hyber {
      * @param params
      */
     public async send(params:hyber.Request): Promise<hyber.Response> {
-        const {body} = await this.fetch(`${this.opts.entry}/${this.opts.id}`, params);
+        const {body} = await this.fetch(
+            `${this.opts.entry}/${this.opts.id}`,
+            this.addDefaultsChannelOptions(params)
+        );
         return {...(body || {})};
     }
 
@@ -83,6 +132,21 @@ class Hyber {
             throw new HyberError(body.error_text, body.error_code);
         }
         return {response, body};
+    }
+    private addDefaultsChannelOptions(params: hyber.Request): hyber.Request {
+        params.channel_options = Object.fromEntries(
+            Object.entries(params.channel_options).map(([key, opts] : [hyber.channels, hyber.Notification]) => {
+                opts.text = (opts.text || params.text) as string;
+                opts.ttl = opts.ttl ?? this.opts.ttl;
+                opts.ctr = opts.ctr ?? this.opts.ctr;
+                if(key === "sms") {
+                    opts.alpha_name = opts.alpha_name || this.opts.alpha;
+                }
+                return [key, opts];
+            })
+        );
+
+        return params;
     }
 }
 
