@@ -12,3 +12,18 @@ https://webigorkiev.github.io/ts-hyber-v2/
 ```bash
 yarn add ts-hyber-v2
 ```
+
+## Usage
+
+```typescript
+import {hyber} from "ts-hyber-v2";
+
+const provider = hyber({
+    id: "<client_id>",
+    login: "Bascic auth login",
+    pw: "Basic auth password"
+})
+await provider.send({
+    // notifications options
+});
+```
