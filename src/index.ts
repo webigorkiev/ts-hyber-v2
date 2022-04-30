@@ -131,7 +131,7 @@ class Hyber {
         const body = await response.json();
         if(!response.ok) {
             throw new HyberError(
-                "Api hyber request error: " + response.statusText,
+                "Api hyber: " + (body.error_text || response.statusText) + ", code: " + (body.error_code || response.status),
                 response.status
             );
         }
