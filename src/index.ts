@@ -18,7 +18,9 @@ export namespace hyber {
         // Default ttl
         ttl?:number,
 
-        ctr?: boolean
+        ctr?: boolean,
+
+        channels?: channels[]
     }
     export type channels = "push"|"viber"|"sms"|"whatsapp";
     export type device = "phone"|"all";
@@ -29,7 +31,7 @@ export namespace hyber {
         start_time?: string,
         tag?: string,
         division_code?: string,
-        channels: channels[],
+        channels?: channels[],
         text?: string,
         channel_options?: {
             push?: Push,
@@ -96,7 +98,8 @@ class Hyber {
     private defaultOpts: Omit<hyber.Options, "login" | "pw" | "id" | "alpha"> = {
         entry: "https://api-v2.hyber.im",
         ttl: 60,
-        ctr: false
+        ctr: false,
+        channels: ["sms"]
     }
     private opts: Required<hyber.Options>;
 
@@ -135,6 +138,8 @@ class Hyber {
         return {response, body};
     }
     private addDefaultsChannelOptions(params: hyber.Request): hyber.Request {
+        params.channels = params.channels || this.opts.channels;
+
         if(!params.channel_options) {
             params.channel_options = {} as Record<hyber.channels, hyber.Notification>;
             params.channels.map((channel) => (params.channel_options as Record<string, any>)[channel] = {});
