@@ -122,15 +122,18 @@ class Hyber {
     private async fetch(url: string, params: Record<string, any> = {}) {
         const response = await fetch(url, {
             headers: {
-                "content-type": "application/json",
-                "authorization": "Basic " + Buffer.from(`${this.opts.login}:${this.opts.pw}`).toString("base64")
+                "Content-Type": "application/json",
+                "Authorization": "Basic " + Buffer.from(`${this.opts.login}:${this.opts.pw}`, "binary").toString("base64")
             },
             body: JSON.stringify(params),
             method: "post"
         });
         const body = await response.json();
         if(!response.ok) {
-            throw new HyberError("Api hyber request error", response.status);
+            throw new HyberError(
+                "Api hyber request error: " + response.statusText,
+                response.status
+            );
         }
         if(body.error_code) {
             throw new HyberError(body.error_text, body.error_code);
