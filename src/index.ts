@@ -158,6 +158,7 @@ class Hyber {
                 return [key, opts];
             })
         );
+        delete params.text;
 
         return params;
     }
