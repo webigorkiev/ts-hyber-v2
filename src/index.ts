@@ -1,4 +1,5 @@
 import fetch from "cross-fetch";
+import {channel} from "diagnostic_channel";
 
 export namespace hyber {
     export interface Options {
@@ -30,7 +31,7 @@ export namespace hyber {
         division_code?: string,
         channels: channels[],
         text?: string,
-        channel_options: {
+        channel_options?: {
             push?: Push,
             viber?: Viber,
             sms?: Sms,
@@ -134,6 +135,10 @@ class Hyber {
         return {response, body};
     }
     private addDefaultsChannelOptions(params: hyber.Request): hyber.Request {
+        if(!params.channel_options) {
+            params.channel_options = {} as Record<hyber.channels, hyber.Notification>;
+            params.channels.map((channel) => (params.channel_options as Record<string, any>)[channel] = {});
+        }
         params.channel_options = Object.fromEntries(
             Object.entries(params.channel_options).map(([key, opts] : [hyber.channels, hyber.Notification]) => {
                 opts.text = (opts.text || params.text) as string;
