@@ -1,3 +1,9 @@
+## [0.0.10]
+
+### Improvements
+
+* Performance improvements
+
 ## [0.0.9]
 
 ### Improvements

@@ -141,7 +141,8 @@ class Hyber {
     public async send(params:hyber.Request): Promise<hyber.Response> {
         const {body} = await this.fetch(
             `${this.opts.entry}/${this.opts.id}`,
-            this.addDefaultsChannelOptions(params)
+            this.addDefaultsChannelOptions(params),
+            "post"
         );
         return {...(body || {})};
     }
@@ -174,7 +175,7 @@ class Hyber {
     private async fetch(url: string, params: Record<string, any> = {}, method = "post") {
         method = method.toLowerCase();
         const urlObj = new URL(url);
-        method === "get" && (urlObj.search = new URLSearchParams(params).toString());
+        method === "get" && Object.keys(params).length && (urlObj.search = new URLSearchParams(params).toString());
 
         const response = await fetch(urlObj.toString(), {
             headers: {
