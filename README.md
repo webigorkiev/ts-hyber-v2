@@ -27,3 +27,7 @@ await provider.send({
     // notifications options
 });
 ```
+
+## Known Issues
+
+* When receiving the status, an error is returned if about 10 seconds have not passed since the moment of sending
