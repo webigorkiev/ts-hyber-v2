@@ -4,6 +4,7 @@ import {channel} from "diagnostic_channel";
 export namespace hyber {
     export interface Options {
         entry?: string,
+        entryStatus?: string,
 
         // Basic auth
         login: string,
@@ -85,6 +86,31 @@ export namespace hyber {
         latitude?:number, // -90 <-> 90
         longitude?:number // -180 <-> 180
     }
+    export interface SentInfo {
+        number: number,
+        time: number,
+        status: number,
+        substatus: number,
+        hyber_status: 23011,
+        message_id: string,
+        extra_id: string,
+        sent_via: string,
+        total_sms_parts: number,
+        delivered_sms_parts: number
+    }
+    export interface SentInfoSimple {
+        phone_number: string,
+        last_partner: string,
+        message_id: string,
+        extra_id: string,
+        time: number,
+        status: number,
+        substatus: number,
+        hyber_status: number,
+        total_sms_parts: number,
+        delivered_sms_parts: number,
+        clicks: number
+    }
 }
 class HyberError extends Error {
     public code?: number;
@@ -97,6 +123,7 @@ class HyberError extends Error {
 class Hyber {
     private defaultOpts: Omit<hyber.Options, "login" | "pw" | "id" | "alpha"> = {
         entry: "https://api-v2.hyber.im",
+        entryStatus: "https://dr-v2.hyber.im",
         ttl: 60,
         ctr: false,
         channels: ["sms"]
@@ -119,14 +146,43 @@ class Hyber {
         return {...(body || {})};
     }
 
-    private async fetch(url: string, params: Record<string, any> = {}) {
-        const response = await fetch(url, {
+    /**
+     * Request simple status by notification id
+     * @param id
+     */
+    public async status(id: string): Promise<hyber.SentInfoSimple> {
+        const {body} = await this.fetch(
+            `${this.opts.entryStatus}/${this.opts.id}/api/dr/${id}/simple`,
+            {},
+            "get"
+        );
+        return {...(body || {})};
+    }
+
+    /**
+     * Request simple status by notification external id
+     * @param id
+     */
+    public async statusExternal(id: string): Promise<hyber.SentInfoSimple> {
+        const {body} = await this.fetch(
+            `${this.opts.entryStatus}/${this.opts.id}/api/dr/external/${id}/simple`,
+            {},
+            "get"
+        );
+        return {...(body || {})};
+    }
+    private async fetch(url: string, params: Record<string, any> = {}, method = "post") {
+        method = method.toLowerCase();
+        const urlObj = new URL(url);
+        method === "get" && (urlObj.search = new URLSearchParams(params).toString());
+
+        const response = await fetch(urlObj.toString(), {
             headers: {
                 "Content-Type": "application/json",
                 "Authorization": "Basic " + Buffer.from(`${this.opts.login}:${this.opts.pw}`, "binary").toString("base64")
             },
-            body: JSON.stringify(params),
-            method: "post"
+            ...(method === "get" ? {} : {body: JSON.stringify(params)}),
+            method
         });
         const body = await response.json();
         if(!response.ok) {
